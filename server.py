@@ -1,30 +1,37 @@
-from flask import Flask, request, jsonify
-import os
+import express from 'express';
+import fileUpload from 'express-fileupload';
+import path from 'path';
+import fs from 'fs';
 
-app = Flask(__name__)
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-UPLOAD_FOLDER = 'uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+// Middleware para manejar la carga de archivos
+app.use(fileUpload());
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+const UPLOAD_FOLDER = 'uploads';
+const uploadDir = path.join(__dirname, UPLOAD_FOLDER);
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    # Verificar si se recibió un archivo
-    if 'image' not in request.files:
-        return jsonify({'error': 'No se recibió ninguna imagen'}), 400
-    
-    # Obtener el archivo de la solicitud
-    image_file = request.files['image']
-    
-    # Guardar la imagen en el servidor
-    if image_file:
-        filename = os.path.join(app.config['UPLOAD_FOLDER'], image_file.filename)
-        image_file.save(filename)
-        return jsonify({'message': 'Imagen recibida y guardada correctamente', 'filename': filename}), 200
-    
-    return jsonify({'error': 'Error al guardar la imagen'}), 500
+app.post('/upload', (req, res) => {
+    if (!req.files || !req.files.image) {
+        return res.status(400).json({ error: 'No se recibió ninguna imagen' });
+    }
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    const imageFile = req.files.image;
+
+    // Guardar la imagen en el servidor
+    const filename = path.join(uploadDir, imageFile.name);
+    imageFile.mv(filename, (err) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al guardar la imagen' });
+        }
+        res.status(200).json({ message: 'Imagen recibida y guardada correctamente', filename: filename });
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`Servidor Express corriendo en el puerto ${PORT}`);
+});
