@@ -1,57 +1,35 @@
-import express from 'express'
-import cors from 'cors'
-import helmet from 'helmet'
-import morgan from 'morgan'
-import fileUpload from 'express-fileupload'
-import { fileURLToPath } from 'url'
-import path, { dirname } from 'path'
-import fs from 'fs'
+import express from 'express';
+import multer from 'multer'; // multipart/form-data
+import fs from 'fs';
 
-const __filename = fileURLToPath(import.meta.url) // Ruta completa
-const __dirname = dirname(__filename) // Directorio
+const app = express();
+const port = 4000;
 
-const app = express()
-const PORT = process.env.PORT || 3000
+const upload = multer({ dest: 'uploads/' });
 
-app.use(fileUpload())
-app.use(cors())
-app.use(helmet())
-app.use(morgan('dev'))
-app.use(express.urlencoded({ extended: false }))
-app.use(express.raw({ type: 'image/jpeg', limit: '10mb' })) // Para recibir imágenes en formato raw
+app.post('/upload_image', upload.single('image'), (req, res) => {
+	try {
 
-const UPLOAD_FOLDER = 'uploads'
-const uploadDir = path.join(__dirname, UPLOAD_FOLDER)
-if (!fs.existsSync(uploadDir)) {
-	fs.mkdirSync(uploadDir)
-}
+		const { file: image } = req;
 
-app.post('/upload', (req, res) => {
-	console.log(req.files)
-	if (!req.files || !req.files.image) {
-		return res.status(400).json({ error: 'No se recibió ninguna imagen' })
-	}
+		if (image) {
 
-	const imageFile = req.files.image
+			const newPath = `uploads/${image.originalname}`;
+			fs.renameSync(image.path, newPath);
 
-	// Generar un nombre único para la imagen
-	const imageName = Date.now() + path.extname(req.files.image.name)
-	const imagePath = path.join(uploadDir, imageName)
+			console.log(`Imagen recibida y guardada como: ${newPath}`);
 
-	// Guardar imagen
-	imageFile.mv(imagePath, (err) => {
-		if (err) {
-			console.error('Error al guardar la imagen:', err)
-			return res.status(500).json({ error: 'Error interno del servidor' })
+			res.status(200).send('Imagen recibida correctamente');
+		} else {
+			console.log('No se recibió ninguna imagen');
+			res.status(400).send('No se recibió ninguna imagen');
 		}
-		console.log('Imagen guardada:', imageName)
-		res.status(200).json({
-			message: 'Imagen recibida y guardada correctamente',
-			filename: imageName,
-		})
-	})
-})
+	} catch (error) {
+		console.error('Error al procesar la imagen:', error);
+		res.status(500).send('Error al procesar la imagen');
+	}
+});
 
-app.listen(PORT, () => {
-	console.log(`Servidor Express corriendo en el puerto ${PORT}`)
-})
+app.listen(port, () => {
+	console.log(`Servidor escuchando en http://localhost:${port}`);
+});
