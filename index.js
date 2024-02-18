@@ -14,15 +14,13 @@ const upload = multer({ dest: 'uploads/' });
 
 app.post('/upload_image', upload.single('image'), (req, res) => {
 	try {
-
 		const { file: image } = req;
 
 		if (image) {
-
-			const newPath = `uploads/${image.originalname}`;
+			const newPath = 'uploads/' + image.originalname;
 			fs.renameSync(image.path, newPath);
 
-			console.log(`Imagen recibida y guardada como: ${newPath}`);
+			console.log('Imagen recibida y guardada como: ' + newPath);
 
 			res.status(200).send('Imagen recibida correctamente');
 		} else {
@@ -36,5 +34,5 @@ app.post('/upload_image', upload.single('image'), (req, res) => {
 });
 
 app.listen(port, () => {
-	console.log(`Servidor escuchando en http://localhost:${port}`);
+	console.log('Servidor escuchando en http://localhost:' + port);
 });
