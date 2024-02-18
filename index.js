@@ -1,9 +1,14 @@
 import express from 'express';
 import multer from 'multer'; // multipart/form-data
+import cors from 'cors';
+import morgan from 'morgan';
 import fs from 'fs';
 
 const app = express();
-const port = 4000;
+const port = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(morgan('dev'));
 
 const upload = multer({ dest: 'uploads/' });
 
